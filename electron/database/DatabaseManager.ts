@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import path from 'node:path'
 import { app } from 'electron'
+import { initializeSchema } from './schema/schema.js'
 
 export class DatabaseManager {
   private static instance: DatabaseManager
@@ -32,7 +33,11 @@ export class DatabaseManager {
       // Enable foreign keys
       this.db.pragma('foreign_keys = ON')
       
-      console.log('Database connected successfully')
+      // Initialize Schema
+      console.log('Initializing database schema...')
+      initializeSchema(this.db)
+      
+      console.log('Database connected and schema initialized successfully')
     } catch (error) {
       console.error('Failed to initialize database:', error)
       // Do not throw to prevent hard crash, but log appropriately

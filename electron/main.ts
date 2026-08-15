@@ -75,6 +75,9 @@ app.whenReady().then(() => {
     
     const fkResult = db.pragma('foreign_keys', { simple: true })
     console.log(`[Database Test] PRAGMA foreign_keys =>`, fkResult)
+
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()
+    console.log(`[Database Test] Tables in database =>`, tables)
   } catch (error) {
     console.error('[Database Test] Failed:', error)
   }
