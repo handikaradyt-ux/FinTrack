@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, session } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IPC_CHANNELS } from './ipcChannels.cjs'
+import { DatabaseManager } from './database/DatabaseManager.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -43,7 +44,8 @@ app.whenReady().then(() => {
     // In development, we need to allow localhost for Vite
     if (!app.isPackaged) {
       csp = "default-src 'none'; " +
-            "script-src 'self' http://localhost:5173; " +
+            // 'unsafe-inline' is required in dev for Vite React plugin's preamble script
+            "script-src 'self' 'unsafe-inline' http://localhost:5173; " +
             "style-src 'self' 'unsafe-inline' http://localhost:5173; " +
             "connect-src 'self' http://localhost:5173 ws://localhost:5173; " +
             "img-src 'self' data: http://localhost:5173; " +
@@ -61,6 +63,22 @@ app.whenReady().then(() => {
     })
   })
 
+  // Initialize Database Manager
+  const dbManager = DatabaseManager.getInstance()
+  dbManager.init()
+
+  // Development Database Verification
+  try {
+    const db = dbManager.getDatabase()
+    const result = db.prepare('SELECT 1 AS result;').get() as { result: number }
+    console.log(`[Database Test] SELECT 1 AS result =>`, result.result)
+    
+    const fkResult = db.pragma('foreign_keys', { simple: true })
+    console.log(`[Database Test] PRAGMA foreign_keys =>`, fkResult)
+  } catch (error) {
+    console.error('[Database Test] Failed:', error)
+  }
+
   createWindow()
 
   app.on('activate', () => {
@@ -74,4 +92,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('will-quit', () => {
+  DatabaseManager.getInstance().close()
 })
