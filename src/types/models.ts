@@ -84,3 +84,39 @@ export type UpdateBudgetPayload = {
 export type IpcSuccess<T> = { success: true; data: T }
 export type IpcError   = { success: false; error: { code: string; message: string } }
 export type IpcResult<T> = IpcSuccess<T> | IpcError
+
+// ---- Dashboard types (Session 6) ----------------------------
+
+export interface DashboardSummary {
+  totalBalance: number
+  monthlyIncome: number
+  monthlyExpense: number
+  totalBudget: number
+  remainingBudget: number
+}
+
+export interface RecentTransaction {
+  id: number
+  type: TransactionType
+  amount: number
+  description: string | null
+  transaction_date: string
+  category_name: string | null
+}
+
+export interface ChartPoint {
+  date: string   // "YYYY-MM-DD"
+  income: number
+  expense: number
+}
+
+export interface BudgetOverviewItem {
+  budget_id: number
+  category_id: number
+  category_name: string
+  budget_amount: number
+  spent_amount: number
+  remaining: number
+  percentage: number   // 0–(>100 if over budget)
+  is_over: boolean
+}

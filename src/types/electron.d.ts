@@ -9,6 +9,10 @@ import type {
   CreateBudgetPayload,
   UpdateBudgetPayload,
   IpcResult,
+  DashboardSummary,
+  RecentTransaction,
+  ChartPoint,
+  BudgetOverviewItem,
 } from './models'
 
 export {}
@@ -42,6 +46,14 @@ declare global {
         create: (payload: CreateBudgetPayload) => Promise<IpcResult<Budget>>
         update: (id: number, payload: UpdateBudgetPayload) => Promise<IpcResult<Budget>>
         delete: (id: number) => Promise<IpcResult<null>>
+      }
+
+      // Dashboard (Session 6)
+      dashboard: {
+        getSummary: () => Promise<IpcResult<DashboardSummary>>
+        getRecentTransactions: () => Promise<IpcResult<RecentTransaction[]>>
+        getChart: () => Promise<IpcResult<ChartPoint[]>>
+        getBudgetOverview: () => Promise<IpcResult<BudgetOverviewItem[]>>
       }
     }
   }

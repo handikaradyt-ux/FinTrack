@@ -4,6 +4,7 @@ import { DatabaseManager } from './database/DatabaseManager.js'
 import * as categoryService   from './services/categoryService.js'
 import * as transactionService from './services/transactionService.js'
 import * as budgetService     from './services/budgetService.js'
+import * as dashboardService  from './services/dashboardService.js'
 import type {
   CreateCategoryPayload,
   UpdateCategoryPayload,
@@ -106,6 +107,28 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.BUDGETS_DELETE, (_event, id: number) => {
     try { budgetService.deleteBudget(db, id); return ok(null) }
+    catch (e) { return fail(e) }
+  })
+
+  // ---- Dashboard (Session 6) --------------------------------
+
+  ipcMain.handle(IPC_CHANNELS.DASHBOARD_GET_SUMMARY, () => {
+    try { return ok(dashboardService.getSummary(db)) }
+    catch (e) { return fail(e) }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DASHBOARD_GET_RECENT_TRANSACTIONS, () => {
+    try { return ok(dashboardService.getRecentTransactions(db)) }
+    catch (e) { return fail(e) }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DASHBOARD_GET_CHART, () => {
+    try { return ok(dashboardService.getChartData(db)) }
+    catch (e) { return fail(e) }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DASHBOARD_GET_BUDGET_OVERVIEW, () => {
+    try { return ok(dashboardService.getBudgetOverview(db)) }
     catch (e) { return fail(e) }
   })
 }

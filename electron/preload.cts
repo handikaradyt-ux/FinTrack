@@ -62,6 +62,18 @@ const api = {
     delete: (id: number) =>
       ipcRenderer.invoke('budgets:delete', id),
   },
+
+  // ---- Dashboard API (Session 6) ----------------------------
+  dashboard: {
+    getSummary: () =>
+      ipcRenderer.invoke('dashboard:getSummary'),
+    getRecentTransactions: () =>
+      ipcRenderer.invoke('dashboard:getRecentTransactions'),
+    getChart: () =>
+      ipcRenderer.invoke('dashboard:getChart'),
+    getBudgetOverview: () =>
+      ipcRenderer.invoke('dashboard:getBudgetOverview'),
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

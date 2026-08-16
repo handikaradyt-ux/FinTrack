@@ -20,4 +20,10 @@ export const IPC_CHANNELS = {
   BUDGETS_GET:    'budgets:get',
   BUDGETS_UPDATE: 'budgets:update',
   BUDGETS_DELETE: 'budgets:delete',
+
+  // Dashboard (Session 6)
+  DASHBOARD_GET_SUMMARY:            'dashboard:getSummary',
+  DASHBOARD_GET_RECENT_TRANSACTIONS:'dashboard:getRecentTransactions',
+  DASHBOARD_GET_CHART:              'dashboard:getChart',
+  DASHBOARD_GET_BUDGET_OVERVIEW:    'dashboard:getBudgetOverview',
 } as const
