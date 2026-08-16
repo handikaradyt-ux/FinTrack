@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IPC_CHANNELS } from './ipcChannels.cjs'
 import { DatabaseManager } from './database/DatabaseManager.js'
+import { registerIpcHandlers } from './ipcHandlers.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -66,6 +67,9 @@ app.whenReady().then(() => {
   // Initialize Database Manager
   const dbManager = DatabaseManager.getInstance()
   dbManager.init()
+
+  // Register all IPC handlers (after DB is initialized)
+  registerIpcHandlers()
 
   // Development Database Verification
   try {

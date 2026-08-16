@@ -1,8 +1,66 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// ============================================================
+// Preload — exposes controlled window.api to Renderer
+// ============================================================
+
 const api = {
-  getVersion: (): Promise<string> => {
-    return ipcRenderer.invoke('app:getVersion')
+  // Legacy — keep working
+  getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
+
+  // ---- Category API -----------------------------------------
+  category: {
+    getAll: (type?: 'income' | 'expense') =>
+      ipcRenderer.invoke('categories:getAll', type),
+    create: (payload: { name: string; type: 'income' | 'expense' }) =>
+      ipcRenderer.invoke('categories:create', payload),
+    update: (id: number, payload: { name?: string; type?: 'income' | 'expense' }) =>
+      ipcRenderer.invoke('categories:update', id, payload),
+    delete: (id: number) =>
+      ipcRenderer.invoke('categories:delete', id),
+  },
+
+  // ---- Transaction API --------------------------------------
+  transaction: {
+    getAll: () =>
+      ipcRenderer.invoke('transactions:getAll'),
+    getById: (id: number) =>
+      ipcRenderer.invoke('transactions:getById', id),
+    create: (payload: {
+      type: 'income' | 'expense'
+      amount: number
+      category_id: number
+      description?: string | null
+      transaction_date: string
+    }) => ipcRenderer.invoke('transactions:create', payload),
+    update: (id: number, payload: {
+      type?: 'income' | 'expense'
+      amount?: number
+      category_id?: number
+      description?: string | null
+      transaction_date?: string
+    }) => ipcRenderer.invoke('transactions:update', id, payload),
+    delete: (id: number) =>
+      ipcRenderer.invoke('transactions:delete', id),
+  },
+
+  // ---- Budget API -------------------------------------------
+  budget: {
+    get: (month?: number, year?: number) =>
+      ipcRenderer.invoke('budgets:get', month, year),
+    create: (payload: {
+      category_id: number
+      amount: number
+      month: number
+      year: number
+    }) => ipcRenderer.invoke('budgets:create', payload),
+    update: (id: number, payload: {
+      amount?: number
+      month?: number
+      year?: number
+    }) => ipcRenderer.invoke('budgets:update', id, payload),
+    delete: (id: number) =>
+      ipcRenderer.invoke('budgets:delete', id),
   },
 }
 
