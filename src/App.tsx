@@ -1,7 +1,8 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { MainLayout } from './components/layout/MainLayout'
 import { Dashboard } from './pages/Dashboard'
-import { Transactions, Categories, Budgets, Reports, Settings } from './pages/PlaceholderPages'
+import { Transactions } from './pages/Transactions'
+import { Categories, Budgets, Reports, Settings } from './pages/PlaceholderPages'
 
 function App() {
   return (
