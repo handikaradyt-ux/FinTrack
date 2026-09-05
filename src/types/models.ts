@@ -81,9 +81,22 @@ export type UpdateBudgetPayload = {
 
 // ---- Generic IPC response wrapper ---------------------------
 
-export type IpcSuccess<T> = { success: true; data: T }
-export type IpcError   = { success: false; error: { code: string; message: string } }
-export type IpcResult<T> = IpcSuccess<T> | IpcError
+export interface IpcError {
+  code: string
+  message: string
+}
+
+export type IpcResult<T> =
+  | {
+      success: true
+      data: T
+      error?: never
+    }
+  | {
+      success: false
+      data?: never
+      error: IpcError
+    }
 
 // ---- Dashboard types (Session 6) ----------------------------
 

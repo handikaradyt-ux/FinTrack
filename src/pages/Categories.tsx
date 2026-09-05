@@ -57,7 +57,7 @@ function CategoryModal({ isOpen, onClose, category, onSubmit }: CategoryModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-surface w-full max-w-md rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-surface w-full max-w-[28rem] rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/30">
           <h2 className="text-[20px] font-semibold text-on-surface">
             {category ? 'Edit Kategori' : 'Tambah Kategori'}
