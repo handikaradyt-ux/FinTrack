@@ -4,7 +4,8 @@ import { Dashboard } from './pages/Dashboard'
 import { Transactions } from './pages/Transactions'
 import { Categories } from './pages/Categories'
 import { Budgets } from './pages/Budgets'
-import { Reports, Settings } from './pages/PlaceholderPages'
+import { Reports } from './pages/Reports'
+import { Settings } from './pages/PlaceholderPages'
 
 function App() {
   return (

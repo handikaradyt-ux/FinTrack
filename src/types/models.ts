@@ -133,3 +133,28 @@ export interface BudgetOverviewItem {
   percentage: number   // 0–(>100 if over budget)
   is_over: boolean
 }
+
+// ---- Reports (Session 10) -----------------------------------
+
+export interface ReportSummary {
+  totalIncome: number
+  totalExpense: number
+  balance: number
+}
+
+export interface ExpenseByCategoryItem {
+  categoryId: number
+  categoryName: string
+  amount: number
+}
+
+export interface ReportTrendItem {
+  period: string
+  income: number
+  expense: number
+}
+
+export interface DateRange {
+  startDate: string
+  endDate: string
+}

@@ -76,6 +76,16 @@ const api = {
     getBudgetOverview: () =>
       ipcRenderer.invoke('dashboard:getBudgetOverview'),
   },
+
+  // ---- Reports (Session 10) ---------------------------------
+  report: {
+    getSummary: (startDate: string, endDate: string) =>
+      ipcRenderer.invoke('report:getSummary', startDate, endDate),
+    getExpenseByCategory: (startDate: string, endDate: string) =>
+      ipcRenderer.invoke('report:getExpenseByCategory', startDate, endDate),
+    getTrend: (startDate: string, endDate: string) =>
+      ipcRenderer.invoke('report:getTrend', startDate, endDate),
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

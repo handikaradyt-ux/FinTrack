@@ -5,6 +5,7 @@ import * as categoryService   from './services/categoryService.js'
 import * as transactionService from './services/transactionService.js'
 import * as budgetService     from './services/budgetService.js'
 import * as dashboardService  from './services/dashboardService.js'
+import * as reportService     from './services/reportService.js'
 import type {
   CreateCategoryPayload,
   UpdateCategoryPayload,
@@ -134,6 +135,23 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.DASHBOARD_GET_BUDGET_OVERVIEW, () => {
     try { return ok(dashboardService.getBudgetOverview(db)) }
+    catch (e) { return fail(e) }
+  })
+
+  // ---- Reports (Session 10) ---------------------------------
+
+  ipcMain.handle(IPC_CHANNELS.REPORTS_GET_SUMMARY, (_event, startDate: string, endDate: string) => {
+    try { return ok(reportService.getMonthlySummary(db, startDate, endDate)) }
+    catch (e) { return fail(e) }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.REPORTS_GET_EXPENSE_BY_CATEGORY, (_event, startDate: string, endDate: string) => {
+    try { return ok(reportService.getExpenseByCategory(db, startDate, endDate)) }
+    catch (e) { return fail(e) }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.REPORTS_GET_TREND, (_event, startDate: string, endDate: string) => {
+    try { return ok(reportService.getIncomeVsExpenseTrend(db, startDate, endDate)) }
     catch (e) { return fail(e) }
   })
 }

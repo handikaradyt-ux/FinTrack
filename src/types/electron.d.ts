@@ -56,6 +56,13 @@ declare global {
         getChart: () => Promise<IpcResult<ChartPoint[]>>
         getBudgetOverview: () => Promise<IpcResult<BudgetOverviewItem[]>>
       }
+
+      // Reports (Session 10)
+      report: {
+        getSummary: (startDate: string, endDate: string) => Promise<IpcResult<import('./models').ReportSummary>>
+        getExpenseByCategory: (startDate: string, endDate: string) => Promise<IpcResult<import('./models').ExpenseByCategoryItem[]>>
+        getTrend: (startDate: string, endDate: string) => Promise<IpcResult<import('./models').ReportTrendItem[]>>
+      }
     }
   }
 }

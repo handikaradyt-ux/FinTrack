@@ -27,4 +27,9 @@ export const IPC_CHANNELS = {
   DASHBOARD_GET_RECENT_TRANSACTIONS:'dashboard:getRecentTransactions',
   DASHBOARD_GET_CHART:              'dashboard:getChart',
   DASHBOARD_GET_BUDGET_OVERVIEW:    'dashboard:getBudgetOverview',
+
+  // Reports (Session 10)
+  REPORTS_GET_SUMMARY:              'report:getSummary',
+  REPORTS_GET_EXPENSE_BY_CATEGORY:  'report:getExpenseByCategory',
+  REPORTS_GET_TREND:                'report:getTrend',
 } as const
