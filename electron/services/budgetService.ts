@@ -3,6 +3,7 @@ import type {
   Budget,
   CreateBudgetPayload,
   UpdateBudgetPayload,
+  BudgetOverviewItem,
 } from '../../src/types/models.js'
 import { getCategoryById } from './categoryService.js'
 
@@ -167,4 +168,61 @@ export function deleteBudget(db: Database.Database, id: number): void {
     throw Object.assign(new Error(`Budget with id ${id} not found.`), { code: 'NOT_FOUND' })
   }
   db.prepare('DELETE FROM budgets WHERE id = ?').run(id)
+}
+
+export function getBudgetProgress(
+  db: Database.Database,
+  month: number,
+  year: number
+): BudgetOverviewItem[] {
+  // Get all budgets for the requested month with category name
+  const budgets = db
+    .prepare(
+      `SELECT
+         b.id AS budget_id,
+         b.category_id,
+         c.name AS category_name,
+         b.amount AS budget_amount
+       FROM budgets b
+       JOIN categories c ON b.category_id = c.id
+       WHERE b.month = ? AND b.year = ?
+       ORDER BY b.id ASC`
+    )
+    .all(month, year) as Array<{
+      budget_id: number
+      category_id: number
+      category_name: string
+      budget_amount: number
+    }>
+
+  // For each budget, sum the spent amount from transactions in same month
+  return budgets.map((row) => {
+    const spentRow = db
+      .prepare(
+        `SELECT COALESCE(SUM(amount), 0) AS spent
+         FROM transactions
+         WHERE category_id = ?
+           AND type = 'expense'
+           AND strftime('%m', transaction_date) = printf('%02d', ?)
+           AND strftime('%Y', transaction_date) = ?`
+      )
+      .get(row.category_id, month, String(year)) as { spent: number }
+
+    const spent = spentRow.spent
+    const remaining = row.budget_amount - spent
+    const percentage = row.budget_amount > 0
+      ? Math.round((spent / row.budget_amount) * 100)
+      : 0
+
+    return {
+      budget_id: row.budget_id,
+      category_id: row.category_id,
+      category_name: row.category_name,
+      budget_amount: row.budget_amount,
+      spent_amount: spent,
+      remaining,
+      percentage,
+      is_over: spent > row.budget_amount,
+    }
+  })
 }

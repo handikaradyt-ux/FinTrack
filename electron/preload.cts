@@ -48,6 +48,8 @@ const api = {
   budget: {
     get: (month?: number, year?: number) =>
       ipcRenderer.invoke('budgets:get', month, year),
+    getProgress: (month: number, year: number) =>
+      ipcRenderer.invoke('budgets:getProgress', month, year),
     create: (payload: {
       category_id: number
       amount: number

@@ -18,6 +18,7 @@ export const IPC_CHANNELS = {
   // Budgets
   BUDGETS_CREATE: 'budgets:create',
   BUDGETS_GET:    'budgets:get',
+  BUDGETS_GET_PROGRESS: 'budgets:getProgress',
   BUDGETS_UPDATE: 'budgets:update',
   BUDGETS_DELETE: 'budgets:delete',
 

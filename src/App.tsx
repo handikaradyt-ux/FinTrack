@@ -3,7 +3,8 @@ import { MainLayout } from './components/layout/MainLayout'
 import { Dashboard } from './pages/Dashboard'
 import { Transactions } from './pages/Transactions'
 import { Categories } from './pages/Categories'
-import { Budgets, Reports, Settings } from './pages/PlaceholderPages'
+import { Budgets } from './pages/Budgets'
+import { Reports, Settings } from './pages/PlaceholderPages'
 
 function App() {
   return (

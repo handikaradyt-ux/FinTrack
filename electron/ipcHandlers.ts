@@ -95,6 +95,11 @@ export function registerIpcHandlers(): void {
     catch (e) { return fail(e) }
   })
 
+  ipcMain.handle(IPC_CHANNELS.BUDGETS_GET_PROGRESS, (_event, month: number, year: number) => {
+    try { return ok(budgetService.getBudgetProgress(db, month, year)) }
+    catch (e) { return fail(e) }
+  })
+
   ipcMain.handle(IPC_CHANNELS.BUDGETS_CREATE, (_event, payload: CreateBudgetPayload) => {
     try { return ok(budgetService.createBudget(db, payload)) }
     catch (e) { return fail(e) }

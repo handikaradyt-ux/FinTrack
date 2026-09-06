@@ -1,11 +1,3 @@
-export function Budgets() {
-  return (
-    <div className="flex flex-col gap-sm">
-      <h1 className="font-display-lg text-display-lg text-on-background">Anggaran</h1>
-      <p className="font-body-lg text-body-lg text-on-surface-variant">Pantau dan kelola anggaran bulanan</p>
-    </div>
-  )
-}
 
 export function Reports() {
   return (

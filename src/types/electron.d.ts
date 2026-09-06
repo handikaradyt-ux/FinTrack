@@ -43,6 +43,7 @@ declare global {
       // Budget
       budget: {
         get: (month?: number, year?: number) => Promise<IpcResult<Budget[]>>
+        getProgress: (month: number, year: number) => Promise<IpcResult<BudgetOverviewItem[]>>
         create: (payload: CreateBudgetPayload) => Promise<IpcResult<Budget>>
         update: (id: number, payload: UpdateBudgetPayload) => Promise<IpcResult<Budget>>
         delete: (id: number) => Promise<IpcResult<null>>
