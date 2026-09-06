@@ -63,7 +63,11 @@ export function Reports() {
         <DateRangeFilter
           initialStartDate={dateRange.startDate}
           initialEndDate={dateRange.endDate}
-          onFilter={(start, end) => setDateRange(start, end)}
+          onFilter={(start, end) => {
+            if (start && end) {
+              setDateRange(start, end)
+            }
+          }}
         />
       </div>
 

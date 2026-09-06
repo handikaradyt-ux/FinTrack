@@ -33,7 +33,7 @@ declare global {
 
       // Transaction
       transaction: {
-        getAll: () => Promise<IpcResult<Transaction[]>>
+        getAll: (filters?: import('./models').TransactionFilters) => Promise<IpcResult<Transaction[]>>
         getById: (id: number) => Promise<IpcResult<Transaction>>
         create: (payload: CreateTransactionPayload) => Promise<IpcResult<Transaction>>
         update: (id: number, payload: UpdateTransactionPayload) => Promise<IpcResult<Transaction>>

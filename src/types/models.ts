@@ -54,6 +54,16 @@ export type UpdateTransactionPayload = {
   transaction_date?: string
 }
 
+export interface TransactionFilters {
+  keyword: string
+  categoryId: number | null
+  type: TransactionType | null
+  startDate: string | null
+  endDate: string | null
+  sortBy: 'date' | 'amount'
+  sortDirection: 'asc' | 'desc'
+}
+
 // ---- Budget -------------------------------------------------
 
 export interface Budget {

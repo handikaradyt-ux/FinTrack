@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react'
 
 export interface DateRangeFilterProps {
-  initialStartDate: string
-  initialEndDate: string
-  onFilter: (startDate: string, endDate: string) => void
+  initialStartDate: string | null
+  initialEndDate: string | null
+  onFilter: (startDate: string | null, endDate: string | null) => void
 }
 
 export function DateRangeFilter({ initialStartDate, initialEndDate, onFilter }: DateRangeFilterProps) {
-  const [startDate, setStartDate] = useState(initialStartDate)
-  const [endDate, setEndDate] = useState(initialEndDate)
+  const [startDate, setStartDate] = useState(initialStartDate || '')
+  const [endDate, setEndDate] = useState(initialEndDate || '')
   const [error, setError] = useState<string | null>(null)
 
   // Sync state if props change externally
   useEffect(() => {
-    setStartDate(initialStartDate)
-    setEndDate(initialEndDate)
+    setStartDate(initialStartDate || '')
+    setEndDate(initialEndDate || '')
   }, [initialStartDate, initialEndDate])
 
   const handleApply = () => {
     setError(null)
     
+    if (!startDate && !endDate) {
+      onFilter(null, null)
+      return
+    }
+
     if (!startDate || !endDate) {
       setError('Harap isi kedua tanggal')
       return
@@ -33,7 +38,15 @@ export function DateRangeFilter({ initialStartDate, initialEndDate, onFilter }: 
     onFilter(startDate, endDate)
   }
 
-  const setPreset = (preset: 'this_month' | 'last_3_months' | 'this_year') => {
+  const setPreset = (preset: 'this_month' | 'last_3_months' | 'this_year' | 'all_time') => {
+    if (preset === 'all_time') {
+      setStartDate('')
+      setEndDate('')
+      setError(null)
+      onFilter(null, null)
+      return
+    }
+
     const now = new Date()
     const format = (d: Date) => d.toISOString().split('T')[0]
     
@@ -85,10 +98,11 @@ export function DateRangeFilter({ initialStartDate, initialEndDate, onFilter }: 
           Terapkan
         </button>
 
-        <div className="hidden md:flex items-center gap-2 ml-auto">
+        <div className="hidden xl:flex items-center gap-2 ml-auto">
           <button onClick={() => setPreset('this_month')} className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors border border-outline-variant/30">Bulan Ini</button>
           <button onClick={() => setPreset('last_3_months')} className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors border border-outline-variant/30">3 Bulan</button>
           <button onClick={() => setPreset('this_year')} className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors border border-outline-variant/30">Tahun Ini</button>
+          <button onClick={() => setPreset('all_time')} className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors border border-outline-variant/30">Semua Waktu</button>
         </div>
       </div>
 

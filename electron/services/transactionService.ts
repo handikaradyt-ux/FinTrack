@@ -3,6 +3,7 @@ import type {
   Transaction,
   CreateTransactionPayload,
   UpdateTransactionPayload,
+  TransactionFilters,
 } from '../../src/types/models.js'
 import { getCategoryById } from './categoryService.js'
 
@@ -21,12 +22,41 @@ function isValidDate(dateStr: string): boolean {
 // Transaction Service
 // ============================================================
 
-export function getAllTransactions(db: Database.Database): Transaction[] {
-  return db
-    .prepare(
-      `SELECT * FROM transactions ORDER BY transaction_date DESC, created_at DESC`,
-    )
-    .all() as Transaction[]
+export function getAllTransactions(db: Database.Database, filters?: Partial<TransactionFilters>): Transaction[] {
+  let query = 'SELECT * FROM transactions WHERE 1=1'
+  const params: any[] = []
+
+  if (filters) {
+    if (filters.keyword?.trim()) {
+      query += ` AND description LIKE '%' || ? || '%'`
+      params.push(filters.keyword.trim())
+    }
+    if (filters.categoryId) {
+      query += ` AND category_id = ?`
+      params.push(filters.categoryId)
+    }
+    if (filters.type) {
+      query += ` AND type = ?`
+      params.push(filters.type)
+    }
+    if (filters.startDate) {
+      query += ` AND transaction_date >= ?`
+      params.push(filters.startDate)
+    }
+    if (filters.endDate) {
+      query += ` AND transaction_date <= ?`
+      params.push(filters.endDate)
+    }
+    
+    const sortCol = filters.sortBy === 'amount' ? 'amount' : 'transaction_date'
+    const sortDir = filters.sortDirection === 'asc' ? 'ASC' : 'DESC'
+    
+    query += ` ORDER BY ${sortCol} ${sortDir}, created_at DESC`
+  } else {
+    query += ` ORDER BY transaction_date DESC, created_at DESC`
+  }
+
+  return db.prepare(query).all(...params) as Transaction[]
 }
 
 export function getTransactionById(

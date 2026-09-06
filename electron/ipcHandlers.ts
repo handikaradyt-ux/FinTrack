@@ -60,8 +60,8 @@ export function registerIpcHandlers(): void {
 
   // ---- Transactions -----------------------------------------
 
-  ipcMain.handle(IPC_CHANNELS.TRANSACTIONS_GET_ALL, () => {
-    try { return ok(transactionService.getAllTransactions(db)) }
+  ipcMain.handle(IPC_CHANNELS.TRANSACTIONS_GET_ALL, (_event, filters?: any) => {
+    try { return ok(transactionService.getAllTransactions(db, filters)) }
     catch (e) { return fail(e) }
   })
 

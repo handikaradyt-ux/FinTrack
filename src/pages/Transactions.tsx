@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import type { Transaction, CreateTransactionPayload, UpdateTransactionPayload, Category, TransactionType } from '../types/models'
+import { DateRangeFilter } from '../components/report/DateRangeFilter'
 
 // ============================================================
 // Formatters
@@ -255,10 +256,15 @@ function DeleteConfirmation({ isOpen, onClose, onConfirm, isDeleting }: { isOpen
 // ============================================================
 
 export function Transactions() {
-  const { transactions, categories, loading, error, fetchTransactions, fetchCategories, createTransaction, updateTransaction, deleteTransaction } = useTransactionStore()
+  const { 
+    transactions, categories, loading, error, filters,
+    fetchTransactions, fetchCategories, createTransaction, updateTransaction, deleteTransaction,
+    setFilters, resetFilters
+  } = useTransactionStore()
   
-  const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')
+  const [searchInput, setSearchInput] = useState(filters.keyword)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 20
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
@@ -267,18 +273,33 @@ export function Transactions() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Fetch initial data
   useEffect(() => {
     fetchTransactions()
     fetchCategories()
   }, [fetchTransactions, fetchCategories])
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
-      const matchType = filterType === 'all' || tx.type === filterType
-      const matchSearch = tx.description?.toLowerCase().includes(search.toLowerCase()) ?? false
-      return matchType && (search === '' || matchSearch)
-    })
-  }, [transactions, filterType, search])
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (filters.keyword !== searchInput) {
+        setFilters({ keyword: searchInput })
+        setCurrentPage(1)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput, filters.keyword, setFilters])
+
+  // Reset page on filter change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters.categoryId, filters.type, filters.startDate, filters.endDate, filters.sortBy, filters.sortDirection])
+
+  // Filter Dropdown items based on selected type
+  const filterCategories = useMemo(() => {
+    if (!filters.type) return categories
+    return categories.filter(c => c.type === filters.type)
+  }, [categories, filters.type])
 
   const handleCreateOrUpdate = async (payload: CreateTransactionPayload | UpdateTransactionPayload) => {
     if (editingTransaction) {
@@ -300,8 +321,39 @@ export function Transactions() {
     }
   }
 
+  const handleSort = (column: 'date' | 'amount') => {
+    if (filters.sortBy === column) {
+      setFilters({ sortDirection: filters.sortDirection === 'asc' ? 'desc' : 'asc' })
+    } else {
+      setFilters({ sortBy: column, sortDirection: 'desc' })
+    }
+  }
+
+  const handleResetFilters = () => {
+    setSearchInput('')
+    resetFilters()
+    setCurrentPage(1)
+  }
+
+  const SortIcon = ({ column }: { column: 'date' | 'amount' }) => {
+    if (filters.sortBy !== column) {
+      return <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-50">arrow_downward</span>
+    }
+    return (
+      <span className="material-symbols-outlined text-[14px] text-primary">
+        {filters.sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+      </span>
+    )
+  }
+
+  const isFilterActive = filters.keyword !== '' || filters.categoryId !== null || filters.type !== null || filters.startDate !== null || filters.endDate !== null
+
+  // Pagination logic
+  const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE) || 1
+  const currentData = transactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
   return (
-    <div className="flex flex-col w-full gap-8 max-w-[1400px]">
+    <div className="flex flex-col w-full gap-6 max-w-[1400px]">
       {/* Modals */}
       <TransactionModal
         isOpen={isModalOpen}
@@ -346,31 +398,63 @@ export function Transactions() {
       )}
 
       {/* Toolbar */}
-      <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant">search</span>
-          <input
-            type="text"
-            placeholder="Cari transaksi..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[14px] text-on-surface placeholder:text-on-surface-variant/60"
-          />
-        </div>
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          {(['all', 'income', 'expense'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-colors whitespace-nowrap ${
-                filterType === type 
-                  ? 'bg-secondary-container text-on-secondary-container shadow-sm border border-secondary-container/20' 
-                  : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-low'
-              }`}
+      <div className="bg-surface rounded-2xl shadow-sm border border-outline-variant/30 p-5 flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+          {/* Search */}
+          <div className="relative w-full md:w-80">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant">search</span>
+            <input
+              type="text"
+              placeholder="Cari transaksi..."
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[14px] text-on-surface placeholder:text-on-surface-variant/60"
+            />
+          </div>
+          
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            {/* Type */}
+            <select
+              value={filters.type ?? ''}
+              onChange={e => setFilters({ type: e.target.value ? e.target.value as TransactionType : null })}
+              className="px-4 py-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[14px] text-on-surface appearance-none cursor-pointer"
             >
-              {type === 'all' ? 'Semua' : type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+              <option value="">Semua Tipe</option>
+              <option value="income">Pemasukan</option>
+              <option value="expense">Pengeluaran</option>
+            </select>
+
+            {/* Category */}
+            <select
+              value={filters.categoryId ?? ''}
+              onChange={e => setFilters({ categoryId: e.target.value ? parseInt(e.target.value, 10) : null })}
+              className="px-4 py-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[14px] text-on-surface appearance-none cursor-pointer max-w-[180px]"
+            >
+              <option value="">Semua Kategori</option>
+              {filterCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        {/* Date Filter & Reset */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 pt-4 border-t border-outline-variant/30">
+          <DateRangeFilter 
+            initialStartDate={filters.startDate}
+            initialEndDate={filters.endDate}
+            onFilter={(start, end) => setFilters({ startDate: start, endDate: end })}
+          />
+          {isFilterActive && (
+            <button 
+              onClick={handleResetFilters}
+              className="flex items-center gap-1.5 px-4 py-2 bg-error-container text-on-error-container hover:bg-error/20 rounded-lg text-[13px] font-semibold transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
+              Reset Filter
             </button>
-          ))}
+          )}
         </div>
       </div>
 
@@ -381,79 +465,133 @@ export function Transactions() {
             <span className="material-symbols-outlined text-[40px] animate-spin opacity-50 mb-3">progress_activity</span>
             <p className="text-[14px] font-medium">Memuat data...</p>
           </div>
-        ) : filteredTransactions.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-on-surface-variant">
             <div className="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center mb-4">
-              <span className="material-symbols-outlined text-[32px] opacity-60">receipt_long</span>
+              <span className="material-symbols-outlined text-[32px] opacity-60">
+                {isFilterActive ? 'search_off' : 'receipt_long'}
+              </span>
             </div>
-            <p className="text-[16px] font-semibold text-on-surface mb-1">Belum ada transaksi</p>
-            <p className="text-[14px]">Data transaksi yang Anda buat akan muncul di sini.</p>
+            <p className="text-[16px] font-semibold text-on-surface mb-1">
+              {isFilterActive ? 'Tidak ada hasil' : 'Belum ada transaksi'}
+            </p>
+            <p className="text-[14px]">
+              {isFilterActive ? 'Tidak ada transaksi yang sesuai dengan filter saat ini.' : 'Data transaksi yang Anda buat akan muncul di sini.'}
+            </p>
+            {isFilterActive && (
+              <button 
+                onClick={handleResetFilters}
+                className="mt-4 px-4 py-2 bg-surface-container-highest hover:bg-surface-container-high rounded-lg font-medium text-[14px] text-on-surface transition-colors"
+              >
+                Reset Filter
+              </button>
+            )}
           </div>
         ) : (
-          <div className="w-full overflow-x-auto">
-            <div className="min-w-[900px] flex flex-col">
-              {/* Header */}
-              <div className="flex items-center bg-surface-container-low/50 py-3.5 px-6 border-b border-outline-variant/30">
-                <div className="w-[15%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Tanggal</div>
-                <div className="w-[30%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Deskripsi</div>
-                <div className="w-[20%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Kategori</div>
-                <div className="w-[12%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Tipe</div>
-                <div className="w-[15%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider text-right">Jumlah</div>
-                <div className="w-[8%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider text-right">Aksi</div>
-              </div>
-              
-              {/* Rows */}
-              <div className="flex flex-col divide-y divide-outline-variant/10">
-                {filteredTransactions.map((tx) => {
-                  const isIncome = tx.type === 'income'
-                  const categoryName = categories.find(c => c.id === tx.category_id)?.name ?? '—'
+          <div className="w-full flex flex-col">
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[900px] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center bg-surface-container-low/50 py-3.5 px-6 border-b border-outline-variant/30">
+                  <div 
+                    onClick={() => handleSort('date')}
+                    className="w-[15%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1 cursor-pointer group select-none"
+                  >
+                    Tanggal <SortIcon column="date" />
+                  </div>
+                  <div className="w-[30%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Deskripsi</div>
+                  <div className="w-[20%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Kategori</div>
+                  <div className="w-[12%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Tipe</div>
+                  <div 
+                    onClick={() => handleSort('amount')}
+                    className="w-[15%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider flex items-center justify-end gap-1 cursor-pointer group select-none"
+                  >
+                    Jumlah <SortIcon column="amount" />
+                  </div>
+                  <div className="w-[8%] text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider text-right">Aksi</div>
+                </div>
+                
+                {/* Rows */}
+                <div className="flex flex-col divide-y divide-outline-variant/10">
+                  {currentData.map((tx) => {
+                    const isIncome = tx.type === 'income'
+                    const categoryName = categories.find(c => c.id === tx.category_id)?.name ?? '—'
 
-                  return (
-                    <div key={tx.id} className="flex items-center py-4 px-6 hover:bg-surface-container-lowest transition-colors group">
-                      <div className="w-[15%] text-[14px] text-on-surface-variant font-medium">
-                        {formatDate(tx.transaction_date)}
-                      </div>
-                      <div className="w-[30%] text-[15px] font-semibold text-on-surface truncate pr-4">
-                        {tx.description || <span className="text-on-surface-variant/50 italic">Tanpa deskripsi</span>}
-                      </div>
-                      <div className="w-[20%]">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-semibold shadow-sm ${
-                          isIncome 
-                            ? 'bg-primary-container/30 text-on-primary-container border border-primary-container' 
-                            : 'bg-error-container/20 text-on-error-container border border-error-container/40'
+                    return (
+                      <div key={tx.id} className="flex items-center py-4 px-6 hover:bg-surface-container-lowest transition-colors group">
+                        <div className="w-[15%] text-[14px] text-on-surface-variant font-medium">
+                          {formatDate(tx.transaction_date)}
+                        </div>
+                        <div className="w-[30%] text-[15px] font-semibold text-on-surface truncate pr-4">
+                          {tx.description || <span className="text-on-surface-variant/50 italic">Tanpa deskripsi</span>}
+                        </div>
+                        <div className="w-[20%]">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-semibold shadow-sm ${
+                            isIncome 
+                              ? 'bg-primary-container/30 text-on-primary-container border border-primary-container' 
+                              : 'bg-error-container/20 text-on-error-container border border-error-container/40'
+                          }`}>
+                            {categoryName}
+                          </span>
+                        </div>
+                        <div className="w-[12%] text-[13px] font-medium text-on-surface-variant">
+                          {isIncome ? 'Pemasukan' : 'Pengeluaran'}
+                        </div>
+                        <div className={`w-[15%] text-[15px] font-semibold text-right tabular-nums ${
+                          isIncome ? 'text-primary' : 'text-on-surface'
                         }`}>
-                          {categoryName}
-                        </span>
+                          {isIncome ? '+' : '-'}{formatRupiah(tx.amount)}
+                        </div>
+                        <div className="w-[8%] flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => { setEditingTransaction(tx); setIsModalOpen(true) }}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-primary-container/20 transition-colors"
+                            aria-label="Edit Transaksi"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          <button 
+                            onClick={() => { setDeletingId(tx.id); setIsDeleteOpen(true) }}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-colors"
+                            aria-label="Hapus Transaksi"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="w-[12%] text-[13px] font-medium text-on-surface-variant">
-                        {isIncome ? 'Pemasukan' : 'Pengeluaran'}
-                      </div>
-                      <div className={`w-[15%] text-[15px] font-semibold text-right tabular-nums ${
-                        isIncome ? 'text-primary' : 'text-on-surface'
-                      }`}>
-                        {isIncome ? '+' : '-'}{formatRupiah(tx.amount)}
-                      </div>
-                      <div className="w-[8%] flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => { setEditingTransaction(tx); setIsModalOpen(true) }}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-primary-container/20 transition-colors"
-                          aria-label="Edit Transaksi"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button 
-                          onClick={() => { setDeletingId(tx.id); setIsDeleteOpen(true) }}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-colors"
-                          aria-label="Hapus Transaksi"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-outline-variant/30 bg-surface-container-lowest">
+                <span className="text-[13px] text-on-surface-variant font-medium">
+                  Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, transactions.length)} dari {transactions.length} transaksi
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-outline-variant/50 text-on-surface disabled:opacity-30 disabled:cursor-not-allowed hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                  </button>
+                  <span className="text-[14px] font-semibold text-on-surface px-2">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-outline-variant/50 text-on-surface disabled:opacity-30 disabled:cursor-not-allowed hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

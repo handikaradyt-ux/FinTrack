@@ -22,8 +22,8 @@ const api = {
 
   // ---- Transaction API --------------------------------------
   transaction: {
-    getAll: () =>
-      ipcRenderer.invoke('transactions:getAll'),
+    getAll: (filters?: any) =>
+      ipcRenderer.invoke('transactions:getAll', filters),
     getById: (id: number) =>
       ipcRenderer.invoke('transactions:getById', id),
     create: (payload: {
