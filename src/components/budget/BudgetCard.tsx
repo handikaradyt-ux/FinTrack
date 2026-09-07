@@ -1,14 +1,6 @@
+import { useSettingsStore } from '../../stores/settingsStore'
+import { formatCurrency } from '../../utils/formatCurrency'
 import type { BudgetOverviewItem } from '../../types/models'
-
-// Formatters
-function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount).replace('IDR', 'Rp').trim()
-}
 
 interface BudgetCardProps {
   item: BudgetOverviewItem
@@ -17,6 +9,8 @@ interface BudgetCardProps {
 }
 
 export function BudgetCard({ item, onEdit, onDelete }: BudgetCardProps) {
+  const { settings } = useSettingsStore()
+  
   // Determine progress bar color
   let progressColor = 'bg-primary'
   if (item.percentage >= 80 && item.percentage <= 100) {
@@ -41,7 +35,7 @@ export function BudgetCard({ item, onEdit, onDelete }: BudgetCardProps) {
           <div className="flex flex-col">
             <span className="text-[16px] font-semibold text-on-surface">{item.category_name}</span>
             <span className="text-[13px] text-on-surface-variant mt-0.5">
-              Anggaran: {formatRupiah(item.budget_amount)}
+              Anggaran: {formatCurrency(item.budget_amount, settings.currency)}
             </span>
           </div>
         </div>
@@ -61,7 +55,7 @@ export function BudgetCard({ item, onEdit, onDelete }: BudgetCardProps) {
           <div className="flex flex-col">
             <span className="text-[12px] font-medium text-on-surface-variant">Terpakai</span>
             <span className="text-[15px] font-semibold text-on-surface tabular-nums">
-              {formatRupiah(item.spent_amount)}
+              {formatCurrency(item.spent_amount, settings.currency)}
             </span>
           </div>
           <span className={`text-[14px] font-bold tabular-nums ${item.is_over ? 'text-error' : 'text-on-surface'}`}>
@@ -77,7 +71,7 @@ export function BudgetCard({ item, onEdit, onDelete }: BudgetCardProps) {
         <div className="flex justify-between items-center mt-1">
           <span className="text-[12px] font-medium text-on-surface-variant">Sisa</span>
           <span className={`text-[13px] font-semibold tabular-nums ${item.remaining < 0 ? 'text-error' : 'text-on-surface'}`}>
-            {formatRupiah(item.remaining)}
+            {formatCurrency(item.remaining, settings.currency)}
           </span>
         </div>
       </div>

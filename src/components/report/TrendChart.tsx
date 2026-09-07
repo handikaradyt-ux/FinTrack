@@ -1,4 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { formatCurrency } from '../../utils/formatCurrency'
 import type { ReportTrendItem } from '../../types/models'
 
 interface TrendChartProps {
@@ -6,6 +8,8 @@ interface TrendChartProps {
 }
 
 export function TrendChart({ data }: TrendChartProps) {
+  const { settings } = useSettingsStore()
+
   if (!data || data.length === 0) {
     return (
       <div className="w-full h-[300px] flex flex-col items-center justify-center text-on-surface-variant bg-surface-container-lowest rounded-xl border border-outline-variant/30">
@@ -14,9 +18,6 @@ export function TrendChart({ data }: TrendChartProps) {
       </div>
     )
   }
-
-  // Format currency
-  const formatRp = (val: number) => `Rp ${val.toLocaleString('id-ID')}`
 
   // Format period (YYYY-MM to Short Month YYYY)
   const formatPeriod = (periodStr: string) => {
@@ -43,7 +44,7 @@ export function TrendChart({ data }: TrendChartProps) {
                 {entry.name === 'income' ? 'Pemasukan' : 'Pengeluaran'}
               </span>
               <span className={`font-semibold ${entry.name === 'income' ? 'text-primary' : 'text-error'}`}>
-                {formatRp(entry.value)}
+                {formatCurrency(entry.value, settings.currency)}
               </span>
             </div>
           ))}
@@ -73,10 +74,8 @@ export function TrendChart({ data }: TrendChartProps) {
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: 'var(--color-on-surface-variant)' }}
-            tickFormatter={(value) => {
-              if (value === 0) return '0'
-              return value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : `${value / 1000}k`
-            }}
+            tickFormatter={(value) => formatCurrency(value, settings.currency)}
+            width={80}
             dx={-10}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(150,150,150,0.05)' }} />

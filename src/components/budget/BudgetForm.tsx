@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Category, CreateBudgetPayload, UpdateBudgetPayload, BudgetOverviewItem } from '../../types/models'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 interface BudgetFormProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface BudgetFormProps {
 }
 
 export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, year, onSubmit }: BudgetFormProps) {
+  const { settings } = useSettingsStore()
   const [amount, setAmount] = useState(budgetItem?.budget_amount?.toString() ?? '')
   const [categoryId, setCategoryId] = useState(budgetItem?.category_id?.toString() ?? '')
   const [error, setError] = useState<string | null>(null)
@@ -126,7 +128,7 @@ export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, yea
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-on-surface-variant">Nominal Anggaran (Rp)</label>
+            <label className="text-[13px] font-medium text-on-surface-variant">Nominal Anggaran ({settings.currency})</label>
             <input
               type="number"
               value={amount}

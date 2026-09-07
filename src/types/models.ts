@@ -64,6 +64,19 @@ export interface TransactionFilters {
   sortDirection: 'asc' | 'desc'
 }
 
+// ---- Settings -----------------------------------------------
+
+export type ThemeSetting = 'light' | 'dark'
+export type CurrencySetting = 'IDR' | 'USD'
+export type LanguageSetting = 'id'
+
+export interface AppSettings {
+  theme?: ThemeSetting
+  currency?: CurrencySetting
+  language?: LanguageSetting
+  [key: string]: string | undefined
+}
+
 // ---- Budget -------------------------------------------------
 
 export interface Budget {

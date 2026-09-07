@@ -75,6 +75,13 @@ declare global {
         create: () => Promise<IpcResult<{ cancelled: boolean, filePath?: string }>>
         restore: () => Promise<IpcResult<{ cancelled: boolean, restored: boolean }>>
       }
+
+      // Settings
+      settings: {
+        getAll: () => Promise<IpcResult<import('./models').AppSettings>>
+        get: (key: string) => Promise<IpcResult<string | undefined>>
+        update: (key: string, value: string) => Promise<IpcResult<boolean>>
+      }
     }
   }
 }

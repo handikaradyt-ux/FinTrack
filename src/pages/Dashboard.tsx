@@ -3,20 +3,15 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { useDashboardStore } from '../stores/dashboardStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import { formatCurrency } from '../utils/formatCurrency'
 import type { BudgetOverviewItem, RecentTransaction } from '../types/models'
 
 // ============================================================
 // Helpers
 // ============================================================
 
-function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount).replace('IDR', 'Rp').trim()
-}
+// Removed local formatRupiah
 
 function formatDate(dateStr: string): string {
   try {
@@ -97,7 +92,7 @@ function ChartTooltip({ active, payload, label }: {
       <p className="mb-1 opacity-70">{label}</p>
       {payload.map((p) => (
         <p key={p.name} style={{ color: p.color }}>
-          {p.name}: {formatRupiah(p.value)}
+          {p.name}: {formatCurrency(p.value, useSettingsStore.getState().settings.currency)}
         </p>
       ))}
     </div>
@@ -128,6 +123,7 @@ function getBudgetIcon(name: string): string {
 }
 
 function BudgetBar({ item }: { item: BudgetOverviewItem }) {
+  const { settings } = useSettingsStore()
   const pct = Math.min(item.percentage, 100)
   const barColor = item.is_over ? 'bg-error' : item.percentage >= 80 ? 'bg-tertiary' : 'bg-primary'
   const icon = getBudgetIcon(item.category_name)
@@ -142,7 +138,7 @@ function BudgetBar({ item }: { item: BudgetOverviewItem }) {
           <span className="text-[14px] font-semibold text-on-surface">{item.category_name}</span>
         </div>
         <span className={`text-[13px] font-medium tabular-nums ${item.is_over ? 'text-error' : 'text-on-surface-variant'}`}>
-          {formatRupiah(item.spent_amount)} / {formatRupiah(item.budget_amount)}
+          {formatCurrency(item.spent_amount, settings.currency)} / {formatCurrency(item.budget_amount, settings.currency)}
         </span>
       </div>
       <div className="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden">
@@ -160,10 +156,11 @@ function BudgetBar({ item }: { item: BudgetOverviewItem }) {
 // ============================================================
 
 function TransactionRow({ tx, striped }: { tx: RecentTransaction; striped: boolean }) {
+  const { settings } = useSettingsStore()
   const isIncome = tx.type === 'income'
   const amountStr = isIncome
-    ? `+${formatRupiah(tx.amount)}`
-    : `-${formatRupiah(tx.amount)}`
+    ? `+${formatCurrency(tx.amount, settings.currency)}`
+    : `-${formatCurrency(tx.amount, settings.currency)}`
 
   return (
     <div className={`flex items-center py-3.5 px-4 hover:bg-surface-container-lowest transition-colors border-b border-outline-variant/10 ${striped ? 'bg-surface-container-low/20' : ''}`}>
@@ -196,6 +193,7 @@ function TransactionRow({ tx, striped }: { tx: RecentTransaction; striped: boole
 
 export function Dashboard() {
   const { summary, recentTransactions, chartData, budgetOverview, loading, error, fetchDashboardData } = useDashboardStore()
+  const { settings } = useSettingsStore()
 
   useEffect(() => {
     fetchDashboardData()
@@ -225,7 +223,7 @@ export function Dashboard() {
             </div>
           </div>
           <div className="flex flex-col gap-1 z-10">
-            <span className="text-[32px] font-semibold text-on-surface tabular-nums">{formatRupiah(summary.totalBalance)}</span>
+            <span className="text-[32px] font-semibold text-on-surface tabular-nums">{formatCurrency(summary.totalBalance, settings.currency)}</span>
             <div className={`flex items-center gap-1 ${summary.totalBalance >= 0 ? 'text-primary' : 'text-error'}`}>
               <span className="material-symbols-outlined text-[16px]">{summary.totalBalance >= 0 ? 'trending_up' : 'trending_down'}</span>
               <span className="text-[12px] font-medium">Saldo keseluruhan</span>
@@ -242,7 +240,7 @@ export function Dashboard() {
             </div>
           </div>
           <div className="flex flex-col gap-1 z-10">
-            <span className="text-[32px] font-semibold text-on-surface tabular-nums">{formatRupiah(summary.monthlyIncome)}</span>
+            <span className="text-[32px] font-semibold text-on-surface tabular-nums">{formatCurrency(summary.monthlyIncome, settings.currency)}</span>
             <div className="flex items-center gap-1 text-primary">
               <span className="material-symbols-outlined text-[16px]">trending_up</span>
               <span className="text-[12px] font-medium">Bulan ini</span>
@@ -259,7 +257,7 @@ export function Dashboard() {
             </div>
           </div>
           <div className="flex flex-col gap-1 z-10">
-            <span className="text-[32px] font-semibold text-on-surface tabular-nums">{formatRupiah(summary.monthlyExpense)}</span>
+            <span className="text-[32px] font-semibold text-on-surface tabular-nums">{formatCurrency(summary.monthlyExpense, settings.currency)}</span>
             <div className="flex items-center gap-1 text-error">
               <span className="material-symbols-outlined text-[16px]">trending_up</span>
               <span className="text-[12px] font-medium">Bulan ini</span>
@@ -277,7 +275,7 @@ export function Dashboard() {
           </div>
           <div className="flex flex-col gap-1 z-10">
             <span className={`text-[32px] font-semibold tabular-nums ${summary.remainingBudget < 0 ? 'text-error' : 'text-on-surface'}`}>
-              {formatRupiah(summary.remainingBudget)}
+              {formatCurrency(summary.remainingBudget, settings.currency)}
             </span>
             {summary.totalBudget > 0 ? (
               <div className={`flex items-center gap-1 ${summary.remainingBudget < 0 ? 'text-error' : 'text-tertiary'}`}>

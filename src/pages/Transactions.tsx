@@ -1,21 +1,14 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useToastStore } from '../stores/toastStore'
+import { formatCurrency } from '../utils/formatCurrency'
 import type { Transaction, CreateTransactionPayload, UpdateTransactionPayload, Category, TransactionType } from '../types/models'
 import { DateRangeFilter } from '../components/report/DateRangeFilter'
 
 // ============================================================
 // Formatters
 // ============================================================
-
-function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount).replace('IDR', 'Rp').trim()
-}
 
 function formatDate(dateStr: string): string {
   try {
@@ -40,6 +33,7 @@ interface TransactionModalProps {
 }
 
 function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }: TransactionModalProps) {
+  const { settings } = useSettingsStore()
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense')
   const [amount, setAmount] = useState(transaction?.amount?.toString() ?? '')
   const [date, setDate] = useState(transaction?.transaction_date ?? new Date().toISOString().split('T')[0])
@@ -151,7 +145,7 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-on-surface-variant">Jumlah (Rp)</label>
+            <label className="text-[13px] font-medium text-on-surface-variant">Jumlah ({settings.currency})</label>
             <input
               type="number"
               value={amount}
@@ -257,6 +251,7 @@ function DeleteConfirmation({ isOpen, onClose, onConfirm, isDeleting }: { isOpen
 // ============================================================
 
 export function Transactions() {
+  const { settings } = useSettingsStore()
   const { 
     transactions, categories, loading, error, filters,
     fetchTransactions, fetchCategories, createTransaction, updateTransaction, deleteTransaction,
@@ -590,7 +585,7 @@ export function Transactions() {
                         <div className={`w-[15%] text-[15px] font-semibold text-right tabular-nums ${
                           isIncome ? 'text-primary' : 'text-on-surface'
                         }`}>
-                          {isIncome ? '+' : '-'}{formatRupiah(tx.amount)}
+                          {isIncome ? '+' : '-'}{formatCurrency(tx.amount, settings.currency)}
                         </div>
                         <div className="w-[8%] flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 

@@ -4,9 +4,11 @@ import { useToastStore } from '../stores/toastStore'
 import { DateRangeFilter } from '../components/report/DateRangeFilter'
 import { CategoryPieChart } from '../components/report/CategoryPieChart'
 import { TrendChart } from '../components/report/TrendChart'
+import { useSettingsStore } from '../stores/settingsStore'
+import { formatCurrency } from '../utils/formatCurrency'
 
 function SummaryCard({ title, amount, icon, type }: { title: string, amount: number, icon: string, type: 'income' | 'expense' | 'balance' }) {
-  const formatRp = (val: number) => `Rp ${Math.abs(val).toLocaleString('id-ID')}`
+  const { settings } = useSettingsStore()
   const isNegative = amount < 0
 
   let colorClass = 'text-on-surface'
@@ -28,7 +30,7 @@ function SummaryCard({ title, amount, icon, type }: { title: string, amount: num
       <div className="flex flex-col">
         <span className="text-[14px] font-medium text-on-surface-variant mb-1">{title}</span>
         <span className={`text-[20px] font-bold ${colorClass}`}>
-          {isNegative ? '-' : ''}{formatRp(amount)}
+          {isNegative ? '-' : ''}{formatCurrency(Math.abs(amount), settings.currency)}
         </span>
       </div>
     </div>

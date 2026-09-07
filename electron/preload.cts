@@ -97,6 +97,13 @@ const api = {
   backup: {
     create: () => ipcRenderer.invoke('backup:create'),
     restore: () => ipcRenderer.invoke('backup:restore'),
+  },
+
+  // ---- Settings API -----------------------------------------
+  settings: {
+    getAll: () => ipcRenderer.invoke('settings:getAll'),
+    get: (key: string) => ipcRenderer.invoke('settings:get', key),
+    update: (key: string, value: string) => ipcRenderer.invoke('settings:update', key, value),
   }
 }
 

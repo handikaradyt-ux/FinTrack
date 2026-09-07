@@ -44,7 +44,22 @@ export function initializeSchema(db: Database.Database): void {
       )
     `).run()
 
-    // 4. Indexes
+    // 4. Settings Table (Session 14)
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    // 5. Default Settings (Session 14)
+    const insertSetting = db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`)
+    insertSetting.run('currency', 'IDR')
+    insertSetting.run('theme', 'light')
+    insertSetting.run('language', 'id')
+
+    // 6. Indexes
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date)`).run()
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id)`).run()
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_budgets_period ON budgets(category_id, month, year)`).run()

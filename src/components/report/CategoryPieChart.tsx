@@ -1,4 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { formatCurrency } from '../../utils/formatCurrency'
 import type { ExpenseByCategoryItem } from '../../types/models'
 
 interface CategoryPieChartProps {
@@ -17,6 +19,8 @@ function getColor(id: number) {
 }
 
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
+  const { settings } = useSettingsStore()
+  
   if (!data || data.length === 0) {
     return (
       <div className="w-full h-[300px] flex flex-col items-center justify-center text-on-surface-variant bg-surface-container-lowest rounded-xl border border-outline-variant/30">
@@ -26,8 +30,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
     )
   }
 
-  // Format currency
-  const formatRp = (val: number) => `Rp ${val.toLocaleString('id-ID')}`
+  // Format currency Removed
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -36,7 +39,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
         <div className="bg-surface border border-outline-variant/30 rounded-lg shadow-lg p-3 text-[13px]">
           <p className="font-semibold text-on-surface mb-1">{data.categoryName}</p>
           <p className="text-on-surface-variant">
-            Total: <span className="font-semibold text-error">{formatRp(data.amount)}</span>
+            Total: <span className="font-semibold text-error">{formatCurrency(data.amount, settings.currency)}</span>
           </p>
         </div>
       )

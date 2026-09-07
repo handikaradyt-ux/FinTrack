@@ -39,5 +39,10 @@ export const IPC_CHANNELS = {
 
   // Backup
   BACKUP_CREATE: 'backup:create',
-  BACKUP_RESTORE: 'backup:restore'
+  BACKUP_RESTORE: 'backup:restore',
+
+  // Settings
+  SETTINGS_GET_ALL: 'settings:getAll',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_UPDATE: 'settings:update',
 } as const

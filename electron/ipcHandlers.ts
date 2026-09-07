@@ -8,6 +8,7 @@ import * as dashboardService  from './services/dashboardService.js'
 import * as reportService     from './services/reportService.js'
 import * as exportService     from './services/exportService.js'
 import * as backupService     from './services/backupService.js'
+import * as settingsService   from './services/settingsService.js'
 import type {
   CreateCategoryPayload,
   UpdateCategoryPayload,
@@ -255,6 +256,33 @@ export function registerIpcHandlers(): void {
     } catch (e: any) {
       console.error(e)
       return fail(new Error(e.message || 'Restore gagal.'))
+    }
+  })
+
+  // ---- Settings ---------------------------------------------
+  
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET_ALL, (_event) => {
+    try {
+      return ok(settingsService.getAllSettings(db))
+    } catch (e: any) {
+      return fail(new Error('Gagal memuat pengaturan.'))
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET, (_event, key: string) => {
+    try {
+      return ok(settingsService.getSetting(db, key))
+    } catch (e: any) {
+      return fail(new Error('Gagal memuat pengaturan.'))
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_UPDATE, (_event, key: string, value: string) => {
+    try {
+      settingsService.updateSetting(db, key, value)
+      return ok(true)
+    } catch (e: any) {
+      return fail(new Error('Gagal menyimpan pengaturan.'))
     }
   })
 }
