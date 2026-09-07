@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
+import { useToastStore } from '../stores/toastStore'
 import type { Transaction, CreateTransactionPayload, UpdateTransactionPayload, Category, TransactionType } from '../types/models'
 import { DateRangeFilter } from '../components/report/DateRangeFilter'
 
@@ -273,6 +274,9 @@ export function Transactions() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const [isExporting, setIsExporting] = useState(false)
+  const { addToast } = useToastStore()
+
   // Fetch initial data
   useEffect(() => {
     fetchTransactions()
@@ -318,6 +322,34 @@ export function Transactions() {
         setIsDeleteOpen(false)
         setDeletingId(null)
       }
+    }
+  }
+
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    if (transactions.length === 0) {
+      addToast('info', 'Tidak ada data untuk diekspor.')
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      const res = format === 'csv' 
+        ? await window.api.export.csv(filters)
+        : await window.api.export.pdf(filters)
+
+      if (res.success) {
+        if (!res.data.cancelled) {
+          addToast('success', `${format.toUpperCase()} berhasil diekspor.`)
+        } else {
+          addToast('info', 'Ekspor dibatalkan.')
+        }
+      } else {
+        addToast('error', res.error.message || 'Gagal mengekspor file.')
+      }
+    } catch (e: any) {
+      addToast('error', 'Terjadi kesalahan sistem saat ekspor.')
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -375,13 +407,31 @@ export function Transactions() {
           <h1 className="text-[40px] font-bold tracking-tight text-on-background leading-tight">Transaksi</h1>
           <p className="text-[16px] text-on-surface-variant">Kelola pemasukan dan pengeluaran Anda</p>
         </div>
-        <button
-          onClick={() => { setEditingTransaction(null); setIsModalOpen(true) }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-semibold text-[14px] transition-colors shadow-sm"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Tambah Transaksi
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleExport('csv')}
+            disabled={isExporting || (loading && transactions.length === 0)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-[14px] transition-colors shadow-sm disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">description</span>
+            CSV
+          </button>
+          <button
+            onClick={() => handleExport('pdf')}
+            disabled={isExporting || (loading && transactions.length === 0)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-[14px] transition-colors shadow-sm disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+            PDF
+          </button>
+          <button
+            onClick={() => { setEditingTransaction(null); setIsModalOpen(true) }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-semibold text-[14px] transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Tambah Transaksi
+          </button>
+        </div>
       </div>
 
       {/* Error Banner */}

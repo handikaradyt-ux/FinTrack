@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useReportStore } from '../stores/reportStore'
+import { useToastStore } from '../stores/toastStore'
 import { DateRangeFilter } from '../components/report/DateRangeFilter'
 import { CategoryPieChart } from '../components/report/CategoryPieChart'
 import { TrendChart } from '../components/report/TrendChart'
@@ -50,12 +51,68 @@ export function Reports() {
     fetchReportData()
   }, [fetchReportData])
 
+  const [isExporting, setIsExporting] = useState(false)
+  const { addToast } = useToastStore()
+
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    if (!summary || (summary.totalIncome === 0 && summary.totalExpense === 0)) {
+      addToast('info', 'Tidak ada data untuk diekspor.')
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      const filters = {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      }
+      
+      const res = format === 'csv' 
+        ? await window.api.export.csv(filters)
+        : await window.api.export.pdf(filters)
+
+      if (res.success) {
+        if (!res.data.cancelled) {
+          addToast('success', `${format.toUpperCase()} berhasil diekspor.`)
+        } else {
+          addToast('info', 'Ekspor dibatalkan.')
+        }
+      } else {
+        addToast('error', res.error.message || 'Gagal mengekspor file.')
+      }
+    } catch (e: any) {
+      addToast('error', 'Terjadi kesalahan sistem saat ekspor.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="flex flex-col w-full gap-8 max-w-[1400px]">
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-[40px] font-bold tracking-tight text-on-background leading-tight">Laporan</h1>
-        <p className="text-[16px] text-on-surface-variant">Analisis kondisi keuangan berdasarkan periode</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[40px] font-bold tracking-tight text-on-background leading-tight">Laporan</h1>
+          <p className="text-[16px] text-on-surface-variant">Analisis kondisi keuangan berdasarkan periode</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleExport('csv')}
+            disabled={isExporting || loading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-[14px] transition-colors shadow-sm disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">description</span>
+            CSV
+          </button>
+          <button
+            onClick={() => handleExport('pdf')}
+            disabled={isExporting || loading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-[14px] transition-colors shadow-sm disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Filter */}

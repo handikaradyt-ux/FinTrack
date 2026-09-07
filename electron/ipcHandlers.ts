@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow } from 'electron'
 import { IPC_CHANNELS } from './ipcChannels.cjs'
 import { DatabaseManager } from './database/DatabaseManager.js'
 import * as categoryService   from './services/categoryService.js'
@@ -6,6 +6,8 @@ import * as transactionService from './services/transactionService.js'
 import * as budgetService     from './services/budgetService.js'
 import * as dashboardService  from './services/dashboardService.js'
 import * as reportService     from './services/reportService.js'
+import * as exportService     from './services/exportService.js'
+import * as backupService     from './services/backupService.js'
 import type {
   CreateCategoryPayload,
   UpdateCategoryPayload,
@@ -153,5 +155,106 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.REPORTS_GET_TREND, (_event, startDate: string, endDate: string) => {
     try { return ok(reportService.getIncomeVsExpenseTrend(db, startDate, endDate)) }
     catch (e) { return fail(e) }
+  })
+
+  // ---- Export -----------------------------------------------
+
+  ipcMain.handle(IPC_CHANNELS.EXPORT_CSV, async (event, filters: any) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender)
+      if (!window) throw new Error('No window')
+      
+      const { canceled, filePath } = await dialog.showSaveDialog(window, {
+        title: 'Ekspor CSV',
+        defaultPath: `fintrack-transactions-${new Date().toISOString().split('T')[0]}.csv`,
+        filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+      })
+
+      if (canceled || !filePath) return ok({ cancelled: true })
+
+      await exportService.exportTransactionsToCSV(db, filePath, filters)
+      return ok({ cancelled: false, filePath })
+    } catch (e) {
+      return fail(new Error('Gagal mengekspor file.'))
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.EXPORT_PDF, async (event, filters: any) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender)
+      if (!window) throw new Error('No window')
+      
+      const { canceled, filePath } = await dialog.showSaveDialog(window, {
+        title: 'Ekspor PDF',
+        defaultPath: `fintrack-transactions-${new Date().toISOString().split('T')[0]}.pdf`,
+        filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+      })
+
+      if (canceled || !filePath) return ok({ cancelled: true })
+
+      await exportService.exportTransactionsToPDF(db, filePath, filters)
+      return ok({ cancelled: false, filePath })
+    } catch (e) {
+      return fail(new Error('Gagal mengekspor file.'))
+    }
+  })
+
+  // ---- Backup -----------------------------------------------
+  
+  ipcMain.handle(IPC_CHANNELS.BACKUP_CREATE, async (event) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender)
+      if (!window) throw new Error('No window')
+      
+      const { canceled, filePath } = await dialog.showSaveDialog(window, {
+        title: 'Buat Backup FinTrack',
+        defaultPath: `fintrack-backup-${new Date().toISOString().split('T')[0]}.db`,
+        filters: [{ name: 'FinTrack Database Backup', extensions: ['db'] }]
+      })
+
+      if (canceled || !filePath) return ok({ cancelled: true })
+
+      await backupService.backupDatabase(db, filePath)
+      return ok({ cancelled: false, filePath })
+    } catch (e: any) {
+      console.error(e)
+      return fail(new Error('Backup gagal dibuat.'))
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.BACKUP_RESTORE, async (event) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender)
+      if (!window) throw new Error('No window')
+      
+      const { canceled, filePaths } = await dialog.showOpenDialog(window, {
+        title: 'Restore Database FinTrack',
+        properties: ['openFile'],
+        filters: [{ name: 'FinTrack Database Backup', extensions: ['db'] }]
+      })
+
+      if (canceled || filePaths.length === 0) return ok({ cancelled: true })
+
+      const candidatePath = filePaths[0]
+
+      const response = await dialog.showMessageBox(window, {
+        type: 'warning',
+        buttons: ['Batal', 'Restore Data'],
+        defaultId: 0,
+        title: 'Peringatan Restore',
+        message: 'Restore akan mengganti seluruh data FinTrack saat ini dengan data dari backup.',
+        detail: 'Perubahan setelah backup dibuat akan hilang.'
+      })
+
+      if (response.response !== 1) {
+        return ok({ cancelled: true })
+      }
+
+      await backupService.restoreDatabase(candidatePath)
+      return ok({ cancelled: false, restored: true })
+    } catch (e: any) {
+      console.error(e)
+      return fail(new Error(e.message || 'Restore gagal.'))
+    }
   })
 }

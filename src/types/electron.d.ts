@@ -63,6 +63,18 @@ declare global {
         getExpenseByCategory: (startDate: string, endDate: string) => Promise<IpcResult<import('./models').ExpenseByCategoryItem[]>>
         getTrend: (startDate: string, endDate: string) => Promise<IpcResult<import('./models').ReportTrendItem[]>>
       }
+
+      // Export
+      export: {
+        csv: (filters?: Partial<import('./models').TransactionFilters>) => Promise<IpcResult<{ cancelled: boolean, filePath?: string }>>
+        pdf: (filters?: Partial<import('./models').TransactionFilters>) => Promise<IpcResult<{ cancelled: boolean, filePath?: string }>>
+      }
+
+      // Backup
+      backup: {
+        create: () => Promise<IpcResult<{ cancelled: boolean, filePath?: string }>>
+        restore: () => Promise<IpcResult<{ cancelled: boolean, restored: boolean }>>
+      }
     }
   }
 }

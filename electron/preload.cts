@@ -77,7 +77,7 @@ const api = {
       ipcRenderer.invoke('dashboard:getBudgetOverview'),
   },
 
-  // ---- Reports (Session 10) ---------------------------------
+  // ---- Report API -------------------------------------------
   report: {
     getSummary: (startDate: string, endDate: string) =>
       ipcRenderer.invoke('report:getSummary', startDate, endDate),
@@ -86,6 +86,18 @@ const api = {
     getTrend: (startDate: string, endDate: string) =>
       ipcRenderer.invoke('report:getTrend', startDate, endDate),
   },
+
+  // ---- Export API -------------------------------------------
+  export: {
+    csv: (filters?: any) => ipcRenderer.invoke('export:csv', filters),
+    pdf: (filters?: any) => ipcRenderer.invoke('export:pdf', filters),
+  },
+
+  // ---- Backup API -------------------------------------------
+  backup: {
+    create: () => ipcRenderer.invoke('backup:create'),
+    restore: () => ipcRenderer.invoke('backup:restore'),
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -32,4 +32,12 @@ export const IPC_CHANNELS = {
   REPORTS_GET_SUMMARY:              'report:getSummary',
   REPORTS_GET_EXPENSE_BY_CATEGORY:  'report:getExpenseByCategory',
   REPORTS_GET_TREND:                'report:getTrend',
+
+  // Export
+  EXPORT_CSV: 'export:csv',
+  EXPORT_PDF: 'export:pdf',
+
+  // Backup
+  BACKUP_CREATE: 'backup:create',
+  BACKUP_RESTORE: 'backup:restore'
 } as const
