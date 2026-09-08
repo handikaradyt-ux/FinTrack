@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useCategoryStore } from '../stores/categoryStore'
+import { categorySchema } from '../schemas/categorySchema'
 import type { Category, CreateCategoryPayload, UpdateCategoryPayload, TransactionType } from '../types/models'
 
 // ============================================================
@@ -16,6 +17,7 @@ interface CategoryModalProps {
 function CategoryModal({ isOpen, onClose, category, onSubmit }: CategoryModalProps) {
   const [name, setName] = useState(category?.name ?? '')
   const [type, setType] = useState<TransactionType>(category?.type ?? 'expense')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -23,6 +25,7 @@ function CategoryModal({ isOpen, onClose, category, onSubmit }: CategoryModalPro
     if (isOpen) {
       setName(category?.name ?? '')
       setType(category?.type ?? 'expense')
+      setFieldErrors({})
       setError(null)
     }
   }, [isOpen, category])
@@ -33,21 +36,25 @@ function CategoryModal({ isOpen, onClose, category, onSubmit }: CategoryModalPro
     e.preventDefault()
     setError(null)
 
-    const trimmedName = name.trim()
-    if (!trimmedName) {
-      setError('Nama kategori tidak boleh kosong')
-      return
+    const payload = {
+      name,
+      type,
     }
-    if (trimmedName.length > 50) {
-      setError('Nama kategori maksimal 50 karakter')
+
+    const validation = categorySchema.safeParse(payload)
+    if (!validation.success) {
+      const errs: Record<string, string> = {}
+      validation.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          errs[err.path[0] as string] = err.message
+        }
+      })
+      setFieldErrors(errs)
       return
     }
 
     setIsSubmitting(true)
-    const success = await onSubmit({
-      name: trimmedName,
-      type,
-    })
+    const success = await onSubmit(validation.data)
     setIsSubmitting(false)
 
     if (success) {
@@ -80,14 +87,14 @@ function CategoryModal({ isOpen, onClose, category, onSubmit }: CategoryModalPro
             <div className="flex bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/30">
               <button
                 type="button"
-                onClick={() => setType('expense')}
+                onClick={() => { setType('expense'); setFieldErrors(prev => ({ ...prev, type: '' })) }}
                 className={`flex-1 py-2 text-[14px] font-medium rounded-md transition-colors ${type === 'expense' ? 'bg-error text-on-error shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low'}`}
               >
                 Pengeluaran
               </button>
               <button
                 type="button"
-                onClick={() => setType('income')}
+                onClick={() => { setType('income'); setFieldErrors(prev => ({ ...prev, type: '' })) }}
                 className={`flex-1 py-2 text-[14px] font-medium rounded-md transition-colors ${type === 'income' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low'}`}
               >
                 Pemasukan
@@ -100,12 +107,11 @@ function CategoryModal({ isOpen, onClose, category, onSubmit }: CategoryModalPro
             <input
               type="text"
               value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] font-medium text-on-surface"
+              onChange={e => { setName(e.target.value); setFieldErrors(prev => ({ ...prev, name: '' })) }}
+              className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.name ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] font-medium text-on-surface`}
               placeholder="Contoh: Makanan"
-              required
-              maxLength={50}
             />
+            {fieldErrors.name && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.name}</span>}
           </div>
 
           <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant/30">

@@ -17,20 +17,9 @@ import type {
   CreateBudgetPayload,
   UpdateBudgetPayload,
 } from '../src/types/models.js'
+import { ok, fail } from './utils/errorResponse.js'
 
-// ---- helper -------------------------------------------------
-
-function ok<T>(data: T) {
-  return { success: true as const, data }
-}
-
-function fail(error: unknown) {
-  if (error instanceof Error) {
-    const code = (error as Error & { code?: string }).code ?? 'UNKNOWN_ERROR'
-    return { success: false as const, error: { code, message: error.message } }
-  }
-  return { success: false as const, error: { code: 'UNKNOWN_ERROR', message: String(error) } }
-}
+// Removed local ok and fail
 
 // ============================================================
 // Register all ipcMain handlers (called once from main.ts)

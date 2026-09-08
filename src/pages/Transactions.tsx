@@ -3,6 +3,7 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useToastStore } from '../stores/toastStore'
 import { formatCurrency } from '../utils/formatCurrency'
+import { transactionSchema } from '../schemas/transactionSchema'
 import type { Transaction, CreateTransactionPayload, UpdateTransactionPayload, Category, TransactionType } from '../types/models'
 import { DateRangeFilter } from '../components/report/DateRangeFilter'
 
@@ -39,6 +40,7 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
   const [date, setDate] = useState(transaction?.transaction_date ?? new Date().toISOString().split('T')[0])
   const [description, setDescription] = useState(transaction?.description ?? '')
   const [categoryId, setCategoryId] = useState(transaction?.category_id?.toString() ?? '')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -50,6 +52,7 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
       setDate(transaction?.transaction_date ?? new Date().toISOString().split('T')[0])
       setDescription(transaction?.description ?? '')
       setCategoryId(transaction?.category_id?.toString() ?? '')
+      setFieldErrors({})
       setError(null)
     }
   }, [isOpen, transaction])
@@ -74,29 +77,28 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
     e.preventDefault()
     setError(null)
 
-    // Frontend Validation
-    const numAmount = parseInt(amount, 10)
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Jumlah harus lebih dari 0')
-      return
+    const payload = {
+      type,
+      amount,
+      transaction_date: date,
+      description: description || undefined,
+      category_id: categoryId,
     }
-    if (!date) {
-      setError('Tanggal wajib diisi')
-      return
-    }
-    if (!categoryId) {
-      setError('Kategori wajib dipilih')
+
+    const validation = transactionSchema.safeParse(payload)
+    if (!validation.success) {
+      const errs: Record<string, string> = {}
+      validation.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          errs[err.path[0] as string] = err.message
+        }
+      })
+      setFieldErrors(errs)
       return
     }
 
     setIsSubmitting(true)
-    const success = await onSubmit({
-      type,
-      amount: numAmount,
-      transaction_date: date,
-      description: description.trim() || null,
-      category_id: parseInt(categoryId, 10),
-    })
+    const success = await onSubmit(validation.data)
     setIsSubmitting(false)
 
     if (success) {
@@ -129,14 +131,14 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
             <div className="flex bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/30">
               <button
                 type="button"
-                onClick={() => setType('expense')}
+                onClick={() => { setType('expense'); setFieldErrors(prev => ({ ...prev, type: '' })) }}
                 className={`flex-1 py-2 text-[14px] font-medium rounded-md transition-colors ${type === 'expense' ? 'bg-error text-on-error shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low'}`}
               >
                 Pengeluaran
               </button>
               <button
                 type="button"
-                onClick={() => setType('income')}
+                onClick={() => { setType('income'); setFieldErrors(prev => ({ ...prev, type: '' })) }}
                 className={`flex-1 py-2 text-[14px] font-medium rounded-md transition-colors ${type === 'income' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low'}`}
               >
                 Pemasukan
@@ -149,12 +151,11 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
             <input
               type="number"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] font-medium text-on-surface"
+              onChange={e => { setAmount(e.target.value); setFieldErrors(prev => ({ ...prev, amount: '' })) }}
+              className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.amount ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] font-medium text-on-surface`}
               placeholder="0"
-              required
-              min="1"
             />
+            {fieldErrors.amount && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.amount}</span>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -163,24 +164,24 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
               <input
                 type="date"
                 value={date}
-                onChange={e => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] text-on-surface"
-                required
+                onChange={e => { setDate(e.target.value); setFieldErrors(prev => ({ ...prev, transaction_date: '' })) }}
+                className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.transaction_date ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] text-on-surface`}
               />
+              {fieldErrors.transaction_date && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.transaction_date}</span>}
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-medium text-on-surface-variant">Kategori</label>
               <select
                 value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] text-on-surface appearance-none"
-                required
+                onChange={e => { setCategoryId(e.target.value); setFieldErrors(prev => ({ ...prev, category_id: '' })) }}
+                className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.category_id ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] text-on-surface appearance-none`}
               >
                 {filteredCategories.length === 0 && <option value="" disabled>Belum ada kategori</option>}
                 {filteredCategories.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              {fieldErrors.category_id && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.category_id}</span>}
             </div>
           </div>
 
@@ -189,10 +190,11 @@ function TransactionModal({ isOpen, onClose, transaction, categories, onSubmit }
             <input
               type="text"
               value={description}
-              onChange={e => setDescription(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] text-on-surface"
+              onChange={e => { setDescription(e.target.value); setFieldErrors(prev => ({ ...prev, description: '' })) }}
+              className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.description ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] text-on-surface`}
               placeholder="Contoh: Makan siang"
             />
+            {fieldErrors.description && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.description}</span>}
           </div>
 
           <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant/30">

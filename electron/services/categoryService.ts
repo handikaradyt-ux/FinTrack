@@ -4,6 +4,7 @@ import type {
   CreateCategoryPayload,
   UpdateCategoryPayload,
 } from '../../src/types/models.js'
+import { categorySchema, updateCategorySchema } from '../../src/schemas/categorySchema.js'
 
 // ---- helpers ------------------------------------------------
 
@@ -42,15 +43,9 @@ export function createCategory(
   db: Database.Database,
   payload: CreateCategoryPayload,
 ): Category {
-  const { name, type } = payload
-
-  // Validate
-  if (!name || name.trim() === '') {
-    throw Object.assign(new Error('Category name is required.'), { code: 'VALIDATION_ERROR' })
-  }
-  if (type !== 'income' && type !== 'expense') {
-    throw Object.assign(new Error('Category type must be income or expense.'), { code: 'VALIDATION_ERROR' })
-  }
+  // Validate basic shape
+  const validated = categorySchema.parse(payload)
+  const { name, type } = validated
 
   // Duplicate check (same name + same type)
   const existing = db
@@ -83,15 +78,10 @@ export function updateCategory(
     throw Object.assign(new Error(`Category with id ${id} not found.`), { code: 'NOT_FOUND' })
   }
 
-  const newName = payload.name !== undefined ? payload.name.trim() : existing.name
-  const newType = payload.type !== undefined ? payload.type : existing.type
+  const validated = updateCategorySchema.parse(payload)
 
-  if (!newName) {
-    throw Object.assign(new Error('Category name cannot be empty.'), { code: 'VALIDATION_ERROR' })
-  }
-  if (newType !== 'income' && newType !== 'expense') {
-    throw Object.assign(new Error('Category type must be income or expense.'), { code: 'VALIDATION_ERROR' })
-  }
+  const newName = validated.name !== undefined ? validated.name : existing.name
+  const newType = validated.type !== undefined ? validated.type : existing.type
 
   // Duplicate check (exclude self)
   const duplicate = db

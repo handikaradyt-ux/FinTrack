@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Category, CreateBudgetPayload, UpdateBudgetPayload, BudgetOverviewItem } from '../../types/models'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { budgetSchema, updateBudgetSchema } from '../../schemas/budgetSchema'
 
 interface BudgetFormProps {
   isOpen: boolean
@@ -16,6 +17,7 @@ export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, yea
   const { settings } = useSettingsStore()
   const [amount, setAmount] = useState(budgetItem?.budget_amount?.toString() ?? '')
   const [categoryId, setCategoryId] = useState(budgetItem?.category_id?.toString() ?? '')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -24,6 +26,7 @@ export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, yea
     if (isOpen) {
       setAmount(budgetItem?.budget_amount?.toString() ?? '')
       setCategoryId(budgetItem?.category_id?.toString() ?? '')
+      setFieldErrors({})
       setError(null)
     }
   }, [isOpen, budgetItem])
@@ -41,42 +44,49 @@ export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, yea
     e.preventDefault()
     setError(null)
 
-    // Validation
-    const numAmount = parseInt(amount, 10)
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Nominal anggaran harus lebih dari 0')
-      return
-    }
-    if (!categoryId) {
-      setError('Kategori wajib dipilih')
-      return
-    }
-
-    setIsSubmitting(true)
-    let payload: CreateBudgetPayload | UpdateBudgetPayload
-    
     if (budgetItem) {
-      // Edit
-      payload = {
-        amount: numAmount,
+      const payload = {
+        amount,
         month,
         year
       }
+      const validation = updateBudgetSchema.safeParse(payload)
+      if (!validation.success) {
+        const errs: Record<string, string> = {}
+        validation.error.issues.forEach((err: any) => {
+          if (err.path[0]) {
+            errs[err.path[0] as string] = err.message
+          }
+        })
+        setFieldErrors(errs)
+        return
+      }
+      setIsSubmitting(true)
+      const success = await onSubmit(validation.data)
+      setIsSubmitting(false)
+      if (success) onClose()
     } else {
-      // Create
-      payload = {
-        category_id: parseInt(categoryId, 10),
-        amount: numAmount,
+      const payload = {
+        category_id: categoryId,
+        amount,
         month,
         year
       }
-    }
-
-    const success = await onSubmit(payload)
-    setIsSubmitting(false)
-
-    if (success) {
-      onClose()
+      const validation = budgetSchema.safeParse(payload)
+      if (!validation.success) {
+        const errs: Record<string, string> = {}
+        validation.error.issues.forEach((err: any) => {
+          if (err.path[0]) {
+            errs[err.path[0] as string] = err.message
+          }
+        })
+        setFieldErrors(errs)
+        return
+      }
+      setIsSubmitting(true)
+      const success = await onSubmit(validation.data)
+      setIsSubmitting(false)
+      if (success) onClose()
     }
   }
 
@@ -115,16 +125,16 @@ export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, yea
             <label className="text-[13px] font-medium text-on-surface-variant">Kategori (Pengeluaran)</label>
             <select
               value={categoryId}
-              onChange={e => setCategoryId(e.target.value)}
-              disabled={!!budgetItem} // Cannot change category when editing
-              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] text-on-surface appearance-none disabled:opacity-50 disabled:bg-surface-container-low"
-              required
+              onChange={e => { setCategoryId(e.target.value); setFieldErrors(prev => ({ ...prev, category_id: '' })) }}
+              disabled={!!budgetItem}
+              className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.category_id ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] text-on-surface appearance-none disabled:opacity-50 disabled:bg-surface-container-low`}
             >
               {categories.length === 0 && <option value="" disabled>Belum ada kategori pengeluaran</option>}
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+            {fieldErrors.category_id && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.category_id}</span>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -132,12 +142,11 @@ export function BudgetForm({ isOpen, onClose, budgetItem, categories, month, yea
             <input
               type="number"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-outline-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-[15px] font-medium text-on-surface"
+              onChange={e => { setAmount(e.target.value); setFieldErrors(prev => ({ ...prev, amount: '' })) }}
+              className={`w-full px-4 py-2.5 rounded-lg bg-surface border ${fieldErrors.amount ? 'border-error focus:ring-error' : 'border-outline-variant/50 focus:border-primary focus:ring-primary'} focus:ring-1 outline-none transition-all text-[15px] font-medium text-on-surface`}
               placeholder="Contoh: 1000000"
-              required
-              min="1"
             />
+            {fieldErrors.amount && <span className="text-[12px] font-medium text-error mt-0.5">{fieldErrors.amount}</span>}
           </div>
 
           <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant/30">

@@ -5,6 +5,7 @@ import type {
   UpdateBudgetPayload,
   BudgetOverviewItem,
 } from '../../src/types/models.js'
+import { budgetSchema, updateBudgetSchema } from '../../src/schemas/budgetSchema.js'
 import { getCategoryById } from './categoryService.js'
 
 // ---- helpers ------------------------------------------------
@@ -52,7 +53,8 @@ export function createBudget(
   db: Database.Database,
   payload: CreateBudgetPayload,
 ): Budget {
-  const { category_id, amount, month, year } = payload
+  const validated = budgetSchema.parse(payload)
+  const { category_id, amount, month, year } = validated
 
   // Validate category exists
   const category = getCategoryById(db, category_id)
@@ -62,24 +64,9 @@ export function createBudget(
       { code: 'NOT_FOUND' },
     )
   }
-  // Validate amount
-  if (typeof amount !== 'number' || amount <= 0) {
+  if (category.type !== 'expense') {
     throw Object.assign(
-      new Error('Budget amount must be a positive number.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  // Validate month
-  if (!Number.isInteger(month) || month < 1 || month > 12) {
-    throw Object.assign(
-      new Error('Budget month must be an integer between 1 and 12.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  // Validate year
-  if (!isValidYear(year)) {
-    throw Object.assign(
-      new Error('Budget year must be an integer between 2000 and 2100.'),
+      new Error('Budget can only be assigned to an expense category.'),
       { code: 'VALIDATION_ERROR' },
     )
   }
@@ -117,25 +104,16 @@ export function updateBudget(
     throw Object.assign(new Error(`Budget with id ${id} not found.`), { code: 'NOT_FOUND' })
   }
 
-  const newAmount = payload.amount ?? existing.amount
-  const newMonth  = payload.month  ?? existing.month
-  const newYear   = payload.year   ?? existing.year
+  const validated = updateBudgetSchema.parse(payload)
 
-  if (typeof newAmount !== 'number' || newAmount <= 0) {
+  const newAmount = validated.amount ?? existing.amount
+  const newMonth  = validated.month  ?? existing.month
+  const newYear   = validated.year   ?? existing.year
+
+  const category = getCategoryById(db, existing.category_id)
+  if (category && category.type !== 'expense') {
     throw Object.assign(
-      new Error('Budget amount must be a positive number.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  if (!Number.isInteger(newMonth) || newMonth < 1 || newMonth > 12) {
-    throw Object.assign(
-      new Error('Budget month must be between 1 and 12.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  if (!isValidYear(newYear)) {
-    throw Object.assign(
-      new Error('Budget year must be between 2000 and 2100.'),
+      new Error('Budget can only be assigned to an expense category.'),
       { code: 'VALIDATION_ERROR' },
     )
   }

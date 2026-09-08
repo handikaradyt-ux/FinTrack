@@ -5,6 +5,7 @@ import type {
   UpdateTransactionPayload,
   TransactionFilters,
 } from '../../src/types/models.js'
+import { transactionSchema, updateTransactionSchema } from '../../src/schemas/transactionSchema.js'
 import { getCategoryById } from './categoryService.js'
 
 // ---- helpers ------------------------------------------------
@@ -72,29 +73,10 @@ export function createTransaction(
   db: Database.Database,
   payload: CreateTransactionPayload,
 ): Transaction {
-  const { type, amount, category_id, description, transaction_date } = payload
+  // Validate basic shape
+  const validated = transactionSchema.parse(payload)
+  const { type, amount, category_id, description, transaction_date } = validated
 
-  // Validate type
-  if (type !== 'income' && type !== 'expense') {
-    throw Object.assign(
-      new Error('Transaction type must be income or expense.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  // Validate amount
-  if (typeof amount !== 'number' || amount <= 0) {
-    throw Object.assign(
-      new Error('Transaction amount must be a positive number.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  // Validate date
-  if (!transaction_date || !isValidDate(transaction_date)) {
-    throw Object.assign(
-      new Error('transaction_date must be a valid date in YYYY-MM-DD format.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
   // Validate category exists
   const category = getCategoryById(db, category_id)
   if (!category) {
@@ -138,33 +120,15 @@ export function updateTransaction(
     )
   }
 
-  const newType             = payload.type             ?? existing.type
-  const newAmount           = payload.amount           ?? existing.amount
-  const newCategoryId       = payload.category_id      ?? existing.category_id
-  const newDescription      = payload.description !== undefined
-    ? payload.description
-    : existing.description
-  const newTransactionDate  = payload.transaction_date ?? existing.transaction_date
+  const validated = updateTransactionSchema.parse(payload)
 
-  // Re-validate
-  if (newType !== 'income' && newType !== 'expense') {
-    throw Object.assign(
-      new Error('Transaction type must be income or expense.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  if (typeof newAmount !== 'number' || newAmount <= 0) {
-    throw Object.assign(
-      new Error('Transaction amount must be a positive number.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
-  if (!isValidDate(newTransactionDate)) {
-    throw Object.assign(
-      new Error('transaction_date must be a valid date in YYYY-MM-DD format.'),
-      { code: 'VALIDATION_ERROR' },
-    )
-  }
+  const newType             = validated.type             ?? existing.type
+  const newAmount           = validated.amount           ?? existing.amount
+  const newCategoryId       = validated.category_id      ?? existing.category_id
+  const newDescription      = validated.description !== undefined
+    ? validated.description
+    : existing.description
+  const newTransactionDate  = validated.transaction_date ?? existing.transaction_date
 
   const category = getCategoryById(db, newCategoryId)
   if (!category) {
