@@ -24,8 +24,35 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      devTools: !app.isPackaged,
     },
   })
+
+  // Security: Block new windows
+  mainWindow.webContents.setWindowOpenHandler(() => {
+    return { action: 'deny' }
+  })
+
+  // Security: Block unauthorized navigation
+  mainWindow.webContents.on('will-navigate', (event, urlString) => {
+    const parsedUrl = new URL(urlString)
+    if (app.isPackaged) {
+      if (parsedUrl.protocol !== 'file:') {
+        event.preventDefault()
+      }
+    } else {
+      if (parsedUrl.origin !== 'http://localhost:5173') {
+        event.preventDefault()
+      }
+    }
+  })
+
+  // Security: DevTools defense-in-depth on production
+  if (app.isPackaged) {
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools()
+    })
+  }
 
   mainWindow.loadURL('http://localhost:5173')
 }
